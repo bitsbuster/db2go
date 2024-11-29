@@ -9,7 +9,7 @@
 - Reads the schema of a specified table using MySQL's `DESCRIBE` command.
 - Generates Go structs based on the table's schema, with optional JSON struct tags.
 
-## Usaage
+## Usage
 
    ```bash
    go get github.com/bitsbuster/db2go
@@ -18,6 +18,72 @@
 ### Example
 
 Generate a Go struct for a table named `users` in a MySQL database:
+
+```go
+package main
+
+import (
+	"fmt"
+	"log"
+	"os"
+
+	"github.com/ardanlabs/conf"
+	"github.com/bitsbuster/db2go"
+)
+
+type Arguments struct {
+	Host         string `conf:"flag:host,short:h,required"`
+	Port         uint16 `conf:"flag:port,short:p,default:3306"`
+	User         string `conf:"flag:user,short:u,required"`
+	Password     string `conf:"flag:password,short:s,required"`
+	DatabaseName string `conf:"flag:db,short:d,required"`
+	Timeout      uint16 `conf:"flag:timeout,short:t,default:10"`
+	Table        string `conf:"flag:table,short:b,required"`
+}
+
+func main() {
+
+	arguments := &Arguments{}
+	//check for execution argument to start app as bridge or redis dispatcher
+	if err := conf.Parse(os.Args[1:], "", arguments); err != nil {
+		log.Panic(err)
+	}
+
+	connection := db2go.GetDbConnection(&db2go.ConnectionString{
+		Host:         arguments.Host,
+		Port:         arguments.Port,
+		User:         arguments.User,
+		Password:     arguments.Password,
+		DatabaseName: arguments.DatabaseName,
+		Timeout:      arguments.Timeout,
+	})
+
+	defer connection.Close()
+
+	tableDescriptor := db2go.GetTable(connection, arguments.Table)
+
+	st := db2go.CreateStruct(tableDescriptor, arguments.Table, true)
+
+	fmt.Printf("%s\n", st)
+}
+```
+
+Build the binary:
+   ```bash
+   go build -o db2go
+   ```
+
+Then you can execute it:
+```bash
+./db2go \
+  --host 127.0.0.1 \
+  --port 3306 \
+  --user root \
+  --password secret \
+  --db my_database \
+  --timeout 10 \
+  --table users
+```
 
 Sample output:
 ```go
