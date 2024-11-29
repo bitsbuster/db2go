@@ -88,11 +88,12 @@ Then you can execute it:
 Sample output:
 ```go
 type Users struct {
-    ID       int    `json:"id"`
-    Name     string `json:"name"`
-    Email    string `json:"email"`
-    Created  string `json:"created"`
-    Modified string `json:"modified"`
+    ID       *uint64     `json:"id"`
+    Name     string      `json:"name"`
+    Email    *string     `json:"email"`
+    Created  string      `json:"created"`
+    Modified *time.Time  `json:"modified"`
+    Data     []byte      `json:"data"`
 }
 ```
 
