@@ -5,7 +5,9 @@ import (
 	"strings"
 )
 
-func CreateStruct(tt []TableDescriptor, table string, withJson bool) string {
+// CreateStruct creates a new struct with the camelized name of the table from the table descriptor.
+// If withJson is true, creates the struct tags for json
+func CreateStruct(tt []TableDescriptor, tableName string, withJson bool) string {
 
 	if len(tt) < 1 {
 		panic("table descriptor is empty")
@@ -35,7 +37,7 @@ func CreateStruct(tt []TableDescriptor, table string, withJson bool) string {
 	template := fmt.Sprintf("    %%-%ds %%-%ds", withField, withType)
 
 	result := strings.Builder{}
-	result.WriteString(fmt.Sprintf("type %sData struc {\n", Camelize(table, true)))
+	result.WriteString(fmt.Sprintf("type %sData struc {\n", Camelize(tableName, true)))
 
 	for _, t := range temp {
 		result.WriteString(fmt.Sprintf(template, t[0], t[1]))
@@ -50,6 +52,8 @@ func CreateStruct(tt []TableDescriptor, table string, withJson bool) string {
 	return result.String()
 }
 
+// getType returns the field type from the mysql column type,
+// having in mind for numbers if it is unsigned or it can be null (then returns a pointer)
 func getType(t TableDescriptor) string {
 
 	cleanType := strings.ToUpper(t.Type)
@@ -59,7 +63,7 @@ func getType(t TableDescriptor) string {
 	cleanType = strings.ReplaceAll(cleanType, "UNSIGNED", "")
 	cleanType = strings.TrimSpace(cleanType)
 
-	//removes parenthesis
+	//removes parantesis
 	posParentesis := strings.Index(cleanType, "(")
 	if posParentesis > 0 {
 		cleanType = cleanType[0:posParentesis]
@@ -96,7 +100,7 @@ func getType(t TableDescriptor) string {
 	case "FLOAT", "DOUBLE", "DECIMAL":
 		result.WriteString("float64")
 	case "DATE", "DATETIME", "TIMESTAMP", "TIME", "YEAR":
-		result.WriteString("time.Time") // Necesitarás importar "time" para usar este tipo
+		result.WriteString("time.Time")
 	case "BLOB", "LONGBLOB", "MEDIUMBLOB", "TINYBLOB", "BINARY", "VARBINARY":
 		result.Reset()
 		result.WriteString("[]byte")
@@ -104,8 +108,7 @@ func getType(t TableDescriptor) string {
 		result.WriteString("bool")
 	default:
 		result.Reset()
-		result.WriteString("interface{}") // Tipo genérico si no se reconoce el tipo
+		result.WriteString("interface{}") // If the type is not known returns generic interface
 	}
-
 	return result.String()
 }

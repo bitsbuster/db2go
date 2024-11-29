@@ -4,28 +4,42 @@ import (
 	"database/sql"
 	"fmt"
 
-	// _ "github.com/ardanlabs/conf"
 	_ "github.com/go-sql-driver/mysql"
 )
 
+// ConnectionString defines the details required to establish a connection to a database.
 type ConnectionString struct {
-	Host         string
-	Port         uint16
-	User         string
-	Password     string
+	// Host specifies the hostname or IP address of the database server.
+	Host string
+	// Port is the port number on which the database server is listening.
+	Port uint16
+	// Timeout is the maximum amount of time (in seconds) to wait for the database connection to be established.
+	Timeout uint16
+	// User is the username used for authenticating to the database.
+	User string
+	// Password is the password associated with the User for database authentication.
+	Password string
+	// DatabaseName is the name of the specific database to connect to on the server.
 	DatabaseName string
-	Timeout      uint16
 }
 
+// TableDescriptor represents the schema details of a single column in a database table.
 type TableDescriptor struct {
-	Field   string
-	Type    string
-	Null    string
-	Key     string
+	// Field is the name of the column in the table.
+	Field string
+	// Type is the data type of the column, as defined in the database schema (e.g., INT, VARCHAR(255)).
+	Type string
+	// Null indicates whether the column can contain NULL values ("YES" or "NO").
+	Null string
+	// Key specifies if the column is part of a key (e.g., "PRI" for primary key, "UNI" for unique key).
+	Key string
+	// Default is the default value assigned to the column, if any. A nil value indicates no default.
 	Default *string
-	Extra   string
+	// Extra contains additional information about the column, such as auto-increment settings.
+	Extra string
 }
 
+// GetDbConnection returns the connection to the database using ConnectionString
 func GetDbConnection(c *ConnectionString) *sql.DB {
 
 	dbURI := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?parseTime=true&timeout=%ds", c.User, c.Password, c.Host, c.Port, c.DatabaseName, c.Timeout)
@@ -44,9 +58,10 @@ func GetDbConnection(c *ConnectionString) *sql.DB {
 	return conn
 }
 
-func GetTable(conn *sql.DB, table string) []TableDescriptor {
+// GetTableDescriptor returns the information from sql "describe <tableName>" query in a TableDescriptor struct
+func GetTableDescriptor(conn *sql.DB, tableName string) []TableDescriptor {
 
-	rows, err := conn.Query(fmt.Sprintf("describe %s", table))
+	rows, err := conn.Query(fmt.Sprintf("describe %s", tableName))
 	if err != nil {
 		fmt.Println("failed querying table description")
 		panic(err)
