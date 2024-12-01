@@ -1,3 +1,4 @@
+[![Go Reference](https://pkg.go.dev/badge/github.com/bitsbuster/db2go@v1.0.0.svg)](https://pkg.go.dev/github.com/bitsbuster/db2go@v1.0.0)
 
 # db2go
 
