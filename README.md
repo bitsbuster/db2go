@@ -62,9 +62,15 @@ func main() {
 
 	tableDescriptor := db2go.GetTable(connection, arguments.Table)
 
+	// Creates the struct based on the table
 	st := db2go.CreateStruct(tableDescriptor, arguments.Table, true)
 
 	fmt.Printf("%s\n", st)
+
+	// To create a go file (including package) with the structs for all the tables you can execute the following lines
+	descriptors := db2go.GetDescriptorsForAllTables(connection)
+
+	db2go.CreateAllTablesStructFile("./allTablesDTO.go", "dto", descriptors, true)
 }
 ```
 

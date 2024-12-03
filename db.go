@@ -39,7 +39,41 @@ type TableDescriptor struct {
 	Extra string
 }
 
-// GetDbConnection returns the connection to the database using ConnectionString
+// GetDbConnection establishes and returns a connection to a MySQL database.
+//
+// This function creates a database connection using the provided `ConnectionString`
+// object, formats the connection URI, and verifies the connection by pinging the database.
+//
+// Parameters:
+//   - c: *ConnectionString - A pointer to a `ConnectionString` struct containing
+//     the database connection details, including user, password, host, port, database name,
+//     and timeout.
+//
+// Returns:
+//   - *sql.DB: A pointer to an established SQL database connection.
+//
+// Behavior:
+//   - The function formats the connection string to include parsing of time values and a timeout.
+//   - If the connection cannot be created or the database cannot be reached, the function
+//     logs the error message and panics.
+//
+// Notes:
+//   - The caller is responsible for closing the returned connection to avoid resource leaks.
+//   - This function assumes a MySQL database and uses the Go `sql` package along with the
+//     MySQL driver.
+//   - Ensure the `ConnectionString` struct contains valid and properly formatted connection parameters.
+//
+// Example Usage:
+//
+//	connString := &ConnectionString{
+//	    User:         "root",
+//	    Password:     "password",
+//	    Host:         "localhost",
+//	    Port:         3306,
+//	    DatabaseName: "my_database",
+//	    Timeout:      5,
+//	}
+//	db := GetDbConnection(connString)
 func GetDbConnection(c *ConnectionString) *sql.DB {
 
 	dbURI := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?parseTime=true&timeout=%ds", c.User, c.Password, c.Host, c.Port, c.DatabaseName, c.Timeout)
@@ -58,7 +92,25 @@ func GetDbConnection(c *ConnectionString) *sql.DB {
 	return conn
 }
 
-// GetTableDescriptor returns the information from sql "describe <tableName>" query in a TableDescriptor struct
+// GetTableDescriptor retrieves the column descriptors for a specified table.
+//
+// This function executes a "DESCRIBE" query on the provided table name using the
+// database connection `conn`. It retrieves the column details and stores them
+// as a slice of `TableDescriptor` objects, where each object contains metadata
+// about a single column.
+//
+// Parameters:
+//   - conn: *sql.DB - A pointer to an open SQL database connection.
+//   - tableName: string - The name of the table to describe.
+//
+// Returns:
+//   - []TableDescriptor: A slice of `TableDescriptor` objects containing metadata
+//     about the columns of the specified table.
+//
+// Notes:
+//   - This function will panic if there is an error executing the query or scanning
+//     the rows. Ensure proper error handling and valid table names are used before
+//     calling this function.
 func GetTableDescriptor(conn *sql.DB, tableName string) []TableDescriptor {
 
 	rows, err := conn.Query(fmt.Sprintf("describe %s", tableName))
@@ -76,6 +128,75 @@ func GetTableDescriptor(conn *sql.DB, tableName string) []TableDescriptor {
 		err = rows.Scan(&r.Field, &r.Type, &r.Null, &r.Key, &r.Default, &r.Extra)
 		if err != nil {
 			fmt.Println("failed scanning table description row")
+			panic(err)
+		}
+
+		result = append(result, r)
+	}
+
+	return result
+}
+
+// GetDescriptorsForAllTables retrieves table descriptors for all tables in a database.
+//
+// This function queries the database connection `conn` to get the names of all tables
+// using the `GetDbTableNames` function. It then iterates over each table name and
+// retrieves its descriptors using the `GetTableDescriptor` function. The results
+// are stored in a map where the keys are table names and the values are slices of
+// `TableDescriptor` objects.
+//
+// Parameters:
+//   - conn: *sql.DB - A pointer to an open SQL database connection.
+//
+// Returns:
+//   - map[string][]TableDescriptor: A map where the key is the table name (string)
+//     and the value is a slice of `TableDescriptor` containing metadata for the respective table.
+func GetDescriptorsForAllTables(conn *sql.DB) map[string][]TableDescriptor {
+
+	tables := GetDbTableNames(conn)
+
+	result := make(map[string][]TableDescriptor)
+
+	for _, t := range tables {
+
+		result[t] = GetTableDescriptor(conn, t)
+
+	}
+
+	return result
+}
+
+// GetDbTableNames retrieves the names of all tables in the connected database.
+//
+// This function executes a "SHOW TABLES" query on the provided database connection `conn`
+// to list all tables in the current database. It processes the query results, scans each
+// table name, and appends it to a slice of strings.
+//
+// Parameters:
+//   - conn: *sql.DB - A pointer to an open SQL database connection.
+//
+// Returns:
+//   - []string: A slice containing the names of all tables in the database.
+//
+// Notes:
+//   - This function will panic if there is an error executing the query or scanning
+//     the rows. Ensure error handling and proper database connection setup before calling this function.
+func GetDbTableNames(conn *sql.DB) []string {
+	rows, err := conn.Query("show tables")
+	if err != nil {
+		fmt.Println("failed querying tables")
+		panic(err)
+	}
+
+	defer rows.Close()
+
+	result := make([]string, 0)
+	for rows.Next() {
+		r := ""
+
+		err = rows.Scan(&r)
+		if err != nil {
+			fmt.Println("failed scanning table name row")
 			panic(err)
 		}
 
