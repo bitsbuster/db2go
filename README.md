@@ -1,5 +1,5 @@
 [![Go Reference](https://pkg.go.dev/badge/github.com/bitsbuster/db2go@v1.0.0.svg)](https://pkg.go.dev/github.com/bitsbuster/db2go@v1.0.0)
-
+[![Go Report Card](https://goreportcard.com/badge/github.com/bitsbuster/db2go)](https://goreportcard.com/report/github.com/bitsbuster/db2go)
 # db2go
 
 `db2go` is a utility written in Go that connects to a MySQL database, reads the schema of a specified table, and generates a Go struct representing the table's structure. The tool uses JSON struct tags to facilitate easy marshaling and unmarshaling of data.
